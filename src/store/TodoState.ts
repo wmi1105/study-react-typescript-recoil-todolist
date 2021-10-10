@@ -1,4 +1,4 @@
-import { atom, selector, selectorFamily } from "recoil";
+import { atom, DefaultValue, selector, selectorFamily } from "recoil";
 import { dateFormat } from "../util/util";
 
 export const filterOptions = [
@@ -19,11 +19,16 @@ export interface TodoTypes {
   todoList: TodoItemTypes[];
 }
 
+export interface cardTypes {
+  cardId: string[];
+  allFilter: string;
+}
+
 export const todoState = atom<TodoTypes[]>({
   key: "todos",
   default: [
     {
-      cardId: '211008093402',
+      cardId: "211008093402",
       filter: "all",
       todoList: [
         {
@@ -44,44 +49,26 @@ export const todoState = atom<TodoTypes[]>({
       ],
     },
     {
-      cardId: '211008093422',
+      cardId: "211008093422",
       filter: "all",
       todoList: [
         {
           id: 1,
           contents: "해야할 일21",
           complete: false,
-        }
+        },
       ],
-    }
+    },
   ],
 });
 
-export const cardState = atom<string[]>({
+export const cardState = atom<cardTypes>({
   key: "cards",
-  default: ['211008093402', '211008093422']
-});
-
-export const getTodoList = selector({
-  key: "getTodoList",
-  get: ({ get }) => {
-    const cards = get(cardState); //string[]
-    const todos = get(todoState); //todoType
-
-    return cards.map((cardId) => {
-      const filter : TodoTypes[] = todos.filter((todo) => todo.cardId === cardId);
-      const card = filter[0];
-      return { cardId, todos: arrayFilter(card.filter, card.todoList)};
-    });
+  default: {
+    cardId: ["211008093402", "211008093422"],
+    allFilter: "all",
   },
 });
-
-function arrayFilter(filter: string, rows: TodoItemTypes[]) {
-  if (filter === "complete") return rows.filter((todo) => todo.complete);
-  else if (filter === "uncomplete")
-    return rows.filter((todo) => !todo.complete);
-  else return rows;
-}
 
 export const getTodos = selectorFamily<TodoItemTypes[], string>({
   key: "getTodos",
@@ -89,27 +76,51 @@ export const getTodos = selectorFamily<TodoItemTypes[], string>({
     (cardId) =>
     ({ get }) => {
       const todos = get(todoState);
-      const filter  =todos.filter(todo => todo.cardId === cardId);
-      return filter[0].todoList;
-    }
+      const card = todos.filter((todo) => todo.cardId === cardId)[0];
+
+      const todoList = card.todoList;
+      switch (card.filter) {
+        case "complete":
+          return todoList.filter((todo) => todo.complete);
+
+        case "uncomplete":
+          return todoList.filter((todo) => !todo.complete);
+
+        default:
+          return todoList;
+      }
+    },
+});
+
+export const getAllFilter = selector<string>({
+  key: "getAllFilter",
+  get: ({ get }) => {
+    const cards = get(cardState);
+    return cards.allFilter;
+  },
+  set: ({ set }, code) => {
+    set(cardState, (prevState) => {
+      const filter: string = code instanceof DefaultValue ? "all" : code;
+      return { ...prevState, allFilter: filter };
+    });
+  },
 });
 
 export const getNextCardKey = selector<string>({
-  key : "getNextCardNumber",
-  get : ({get}) => {
-    let uniqKey :string = "";
+  key: "getNextCardNumber",
+  get: ({ get }) => {
+    let uniqKey: string = "";
     const cards = get(cardState);
-    while(uniqKey !== ""){
-      const dateKey = dateFormat('','YYMMDDhhmmsszzz');
-      const find = cards.find(id => (id === dateKey))
-      if(find){
+    while (uniqKey !== "") {
+      const dateKey = dateFormat("", "YYMMDDhhmmsszzz");
+      const find = cards.cardId.find((id) => id === dateKey);
+      if (find) {
         uniqKey = dateKey;
       }
     }
     return uniqKey;
-  }
-})
-
+  },
+});
 
 // export const getNextCardNumber = selector({
 //   key: "getTodoList",
@@ -126,4 +137,3 @@ export const getNextCardKey = selector<string>({
 //     return cards.mapp....
 //   }
 // })
-

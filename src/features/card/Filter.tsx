@@ -1,33 +1,30 @@
-import React, { useEffect } from "react";
+import React from "react";
 import styled from "@emotion/styled";
 import Select from "../../components/select/Select";
-import { filterOptions } from "../../store/TodoState";
+import { filterOptions, getAllFilter } from "../../store/TodoState";
 import { useCardCtrl } from "./useCardCtrl";
+import { useSetRecoilState } from "recoil";
 
 interface PropTypes {
   cardId: string;
 }
 
 export default function Filter({ cardId }: PropTypes) {
-  // const allFilter = useRecoilValue(todoState)
-
-  const {onFilter} = useCardCtrl(cardId);
-
-  // useEffect(() => {
-  //   onFilter(allFilter)
-  // }, [onFilter, allFilter])
+  const setAllFilter = useSetRecoilState(getAllFilter);
+  const { onFilter, getFilterValue } = useCardCtrl(cardId);
 
   const handleChangeFilter = (code: string) => {
-    onFilter(code)
-  }
-
-  useEffect(() => {
-    console.log()
-  }, [onFilter])
+    if (cardId === "") setAllFilter(code);
+    else onFilter(code);
+  };
 
   return (
     <FilterWrap>
-      <Select options={filterOptions} onChange={handleChangeFilter} value={'all'} />
+      <Select
+        options={filterOptions}
+        onChange={handleChangeFilter}
+        value={getFilterValue}
+      />
     </FilterWrap>
   );
 }

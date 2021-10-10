@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React from "react";
 import { TodoTypes, todoState } from "./../../store/TodoState";
 import { useRecoilState } from "recoil";
 
@@ -41,7 +41,8 @@ export function useTodoCtrl(cardId: string) {
           return card.cardId === cardId ? { ...card, todoList: result } : card;
         })
       );
-    } else {}
+    } else {
+    }
   };
 
   //완료 체크 토글
@@ -71,10 +72,6 @@ export function useTodoCtrl(cardId: string) {
       })
     );
   };
-
-  // useEffect(() => {
-  //   console.log(todos);
-  // }, [todos])
 
   return {
     onAddContents,

@@ -1,73 +1,87 @@
-import React, {useEffect, useMemo} from "react";
-import { todoState, TodoTypes, cardState, getNextCardKey } from "./../../store/TodoState";
+import React, { useCallback, useEffect, useMemo } from "react";
+import {
+  todoState,
+  TodoTypes,
+  cardState,
+  getNextCardKey,
+  cardTypes,
+} from "./../../store/TodoState";
 import { useRecoilState, useRecoilValue } from "recoil";
 
-export function useCardCtrl(cardId:string) {
-  const [cards, setCards] = useRecoilState<string[]>(cardState);
+export function useCardCtrl(cardId: string) {
+  const [cards, setCards] = useRecoilState<cardTypes>(cardState);
   const [todos, setTodos] = useRecoilState<TodoTypes[]>(todoState);
+  const allFilter = cards.allFilter;
   const nextCardKey = useRecoilValue<string>(getNextCardKey);
 
   const onAddCard = (): void => {
-      console.log(nextCardKey);
+    const cardIds = cards.cardId;
+    const find = cardIds.find((id) => id === cardId);
+    if (find) {
+      const index = cardIds.indexOf(find);
+      const tempCards = [...cardIds];
+      tempCards.splice(index + 1, 0, nextCardKey);
 
-      const find = cards.find(id => id === cardId);
-      if(find) {
-        const index = cards.indexOf(find);
-        const tempCards = [...cards];
-        tempCards.splice(index+1, 0, nextCardKey);
-
-        const newCard = {
-          cardId : nextCardKey,
-          filter : 'all',
-          todoList : [
-            {
-              id: 1,
+      const newCard = {
+        cardId: nextCardKey,
+        filter: "all",
+        todoList: [
+          {
+            id: 1,
             contents: "",
             complete: false,
-            }
-          ]
-        }
+          },
+        ],
+      };
 
-        setCards(tempCards);
-        setTodos([...todos, newCard])        
-      }
-      else{}
+      setCards({ ...cards, cardId: tempCards });
+      setTodos([...todos, newCard]);
+    } else {
+    }
   };
 
   const onRemoveCard = (): void => {
-    // setTodos(todos.filter(todo => todo.cardId !== cardId));
-    setCards(cards.filter(id => id !== cardId));
-    setTodos(todos.filter(card => card.cardId !== cardId))
-    
-  }
-
-
-  const onFilter = (code: string): void => {
-    setTodos(
-      todos.map((card) => {
-        return card.cardId === cardId
-          ? { ...card, complete: code }
-          : cardId === ""
-          ? { ...card, complete: code }
-          : card;
-      })
-    );
+    const cardIds = cards.cardId.filter((id) => id !== cardId);
+    setCards({ ...cards, cardId: cardIds });
+    setTodos(todos.filter((card) => card.cardId !== cardId));
   };
 
+  const onChangeAllFilter = useCallback(() => {
+    setTodos(
+      todos.map((card) => {
+        return { ...card, filter: allFilter };
+      })
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allFilter]);
 
-  const getFilterValue = ():string => {
-    const card = todos.find(card => card.cardId === cardId);
-      return card ? card.filter:'all';
-  }
+  const onFilter = useCallback(
+    (code: string): void => {
+      setTodos(
+        todos.map((card) => {
+          return card.cardId === cardId ? { ...card, filter: code } : card;
+        })
+      );
+    },
+    [cardId, setTodos, todos]
+  );
 
-//   useEffect(() => {
-//     console.log(cards);
-//   }, [cards])
+  const getFilterValue = useMemo((): string => {
+    if (cardId === "") return allFilter;
+    else {
+      const card = todos.find((card) => card.cardId === cardId);
+      return card ? card.filter : "all";
+    }
+  }, [todos, allFilter, cardId]);
+
+  useEffect(() => {
+    onChangeAllFilter();
+  }, [allFilter, onChangeAllFilter]);
 
   return {
     onAddCard,
     onFilter,
     onRemoveCard,
-    getFilterValue
+    getFilterValue,
   };
 }
